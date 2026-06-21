@@ -570,6 +570,104 @@ function caseCardsHtml() {
   return `<section class="library"><div class="library-head"><div><p class="eyebrow">CASE LIBRARY</p><h2>Choose your next challenge.</h2></div><button class="random-case" id="randomCase">↻ Random case</button></div><div class="case-grid">${caseLibrary.map(caseItem => `<article class="case-tile"><div><span class="difficulty">${caseItem.difficulty || "Hard"}</span><h3>${caseItem.title}</h3><p>${caseItem.situation}</p></div><footer><small>8 questions · 30 min · feedback</small><button class="choose-case" data-case-id="${caseItem.id}">Start →</button></footer></article>`).join("")}</div></section>`;
 }
 
+const formulaGroups = [
+  {
+    title: "Profitability & margins",
+    formulas: [
+      ["Operating profit", "Profit = Revenue − Total operating costs", "The starting point for almost every quant question in this simulator — e.g. NusaSip, BumiBite, Anggun Living, Java Mart."],
+      ["Margin per unit", "Margin = Price per unit − Cost per unit", "Multiply by volume to get total profit. Used directly in Java Mart and Nadiar Mobile."],
+      ["Margin %", "Margin % = (Price − Cost) ÷ Price × 100", "Same idea as margin per unit, expressed as a share of price instead of a currency amount."],
+      ["Blended (weighted-average) margin", "Blended margin = Σ (segment revenue share × segment margin %)", "Each segment counts in proportion to its share of revenue, not equally. See Anggun Living's mix-shift question."],
+      ["Break-even volume", "Break-even volume = Fixed costs ÷ Contribution margin per unit", "The volume needed to cover fixed costs exactly; below this, the activity loses money."],
+    ],
+  },
+  {
+    title: "Growth, change & comparison",
+    formulas: [
+      ["Percentage change", "% change = (New − Old) ÷ Old × 100", "A relative measure — always read it against the base value, not the raw difference."],
+      ["Percentage points (pp)", "pp change = New % − Old %", "An absolute difference between two percentages. Not the same number as percentage change — see Nadiar Mobile's share question, where the two metrics disagree about who's \"winning.\""],
+      ["CAGR", "CAGR = (Ending value ÷ Beginning value)^(1 ÷ years) − 1", "The single steady annual growth rate that would take you from the start value to the end value."],
+      ["Index number", "Index = (Value in period ÷ Value in base period) × 100", "Rebases a series so the base period equals 100, making relative changes easy to compare at a glance."],
+    ],
+  },
+  {
+    title: "Capacity & supply",
+    formulas: [
+      ["Spare capacity", "Spare capacity = Maximum capacity − Existing committed volume", "What's left over after contractual or current commitments. See the capacity questions in NusaSip, BumiBite, and VoltaRide."],
+      ["Capacity gap", "Capacity gap = Required demand − Available capacity", "A positive gap means demand can't be met from this source alone — you need another supplier, more capex, or higher utilization."],
+    ],
+  },
+  {
+    title: "Investment, valuation & risk",
+    formulas: [
+      ["Valuation from a multiple", "Valuation = Multiple × Profit impact", "A ceiling on what to pay, not a reason to pay it — see the acquisition decisions in NusaSip and BumiBite."],
+      ["Payback period", "Payback (months) = Capex ÷ Net monthly cash flow", "How long it takes an investment to pay for itself. Used in VoltaRide's fleet decision."],
+      ["Expected value (EV)", "EV = Σ (Probability of each scenario × Outcome in that scenario)", "A probability-weighted average outcome across scenarios — not the best case, not the worst case."],
+      ["Risk-adjusted value", "Risk-adjusted value = Expected value − Certain costs", "Net the EV against any cost you'll pay regardless of outcome, like a one-off campaign or launch spend."],
+    ],
+  },
+  {
+    title: "Market sizing & pricing",
+    formulas: [
+      ["Top-down market sizing", "Market size = Population × Addressable % × Penetration % × Frequency × Price", "Chain simple, defensible assumptions together — see VoltaRide's ride-demand sizing."],
+      ["Revenue vs. profit", "Revenue = Price × Quantity; Profit = (Price − Unit cost) × Quantity", "The price that maximizes revenue is rarely the price that maximizes profit once unit cost is positive — see Nadiar Mobile."],
+      ["Price elasticity of demand", "Elasticity = (% change in quantity) ÷ (% change in price)", "How sharply demand reacts to a price move; low elasticity means customers keep buying even as price rises."],
+    ],
+  },
+];
+
+const glossaryTerms = [
+  ["MECE", "Mutually Exclusive, Collectively Exhaustive. A good structuring answer covers every relevant angle once each, with no overlap and no gaps — the standard every \"select five datasets\" question is graded against."],
+  ["Fixed costs", "Costs that don't change with volume in the short run, like rent or base salaries."],
+  ["Variable costs", "Costs that scale with volume, like materials or per-unit labor."],
+  ["CapEx", "Capital expenditure: one-off spending on assets such as a fleet, a factory, or equipment."],
+  ["OpEx", "Operating expenditure: the recurring cost of running the business day to day."],
+  ["EBITDA", "Earnings Before Interest, Taxes, Depreciation, and Amortization — a rough proxy for operating cash profit."],
+  ["Net margin", "Net profit ÷ revenue, after every cost including interest and tax — narrower than gross or contribution margin."],
+  ["Contribution margin", "Price minus variable cost per unit. Excludes fixed costs, so it shows what each extra unit sold contributes toward covering them."],
+  ["Cannibalization", "When a new product, channel, or price takes sales away from your own existing business instead of from competitors."],
+  ["Synergy", "A saving or revenue gain that only exists because two things are combined — e.g. shifting production in-house after an acquisition."],
+  ["Run rate", "What a recent period's results would total if extrapolated for a full year — e.g. a \"Month-6 run rate\" annualized."],
+  ["Guardrail", "A constraint a recommendation must not breach, such as \"reliability cannot decline\" or \"tariffs cannot rise more than 0.6%.\""],
+  ["Portfolio", "In a case context, a bundle of initiatives or interventions chosen together and evaluated against the same constraints."],
+  ["Utilization", "How intensively an asset is used, e.g. rides per scooter per day. Raising utilization can substitute for buying more assets."],
+  ["Decoy", "An answer option that sounds plausible but isn't actually relevant to this decision. The skill is recognizing what matters for THIS objective, not data in general."],
+  ["Weighted average", "An average where each component counts in proportion to its share of the total, not equally — e.g. a blended margin across a product mix."],
+  ["Opportunity cost", "The value of the next-best alternative you give up by choosing one option over another."],
+  ["TAM / SAM / SOM", "Total addressable market, serviceable addressable market, and serviceable obtainable market — each a narrower subset of the one before it."],
+];
+
+const caseTraps = [
+  ["Revenue-max price ≠ profit-max price", "The price that sells the most (or earns the most revenue) is rarely the price that earns the most profit, once you subtract a positive unit cost. Check both before recommending a price.", "Nadiar Mobile"],
+  ["Percentage points vs. percentage change", "\"+5 percentage points\" and \"+25% growth\" can both describe the same shift, and which metric \"wins\" can flip depending on which two things you're comparing.", "Nadiar Mobile"],
+  ["Mismatched time periods", "A table mixing quarterly, monthly, and annual figures will quietly give you the wrong total unless you convert everything to the same period first.", "Nadiar Mobile"],
+  ["Revenue up, profit down", "Don't stop at the headline — check whether the sales mix shifted toward a lower-margin segment before concluding costs spiraled.", "Anggun Living"],
+  ["\"Feels safer\" isn't \"more profitable\"", "Matching a competitor's price cut looks like the defensive, low-risk move, but the margin math can make it the worst option on the table.", "Java Mart"],
+  ["A valuation ceiling isn't a recommendation", "A maximum bid tells you the most you should pay, not that you should acquire at all — check capacity and launch economics first.", "NusaSip, BumiBite"],
+];
+
+function referenceView() {
+  shell(`<section class="reference-page">
+    <header class="reference-hero">
+      <p class="eyebrow">STUDY GUIDE</p>
+      <h1>Glossary &amp; formulas</h1>
+      <p>The vocabulary and math behind every question in this simulator. Skim it once, keep it open in a second tab during practice — Casey never penalizes you for knowing the formulas cold, only for not setting them up correctly.</p>
+      <button class="text-button" id="backToWelcome">← Back to case library</button>
+    </header>
+    ${formulaGroups.map(group => `<section class="reference-block"><h2>${group.title}</h2><div class="formula-grid">${group.formulas.map(([name, formula, note]) => `<article class="formula-card"><b>${name}</b><code>${formula}</code><p>${note}</p></article>`).join("")}</div></section>`).join("")}
+    <section class="reference-block">
+      <h2>Glossary</h2>
+      <div class="glossary-grid">${glossaryTerms.map(([term, def]) => `<article class="glossary-term"><b>${term}</b><p>${def}</p></article>`).join("")}</div>
+    </section>
+    <section class="reference-block traps">
+      <h2>Traps Casey likes to set</h2>
+      <p class="traps-intro">Six patterns that show up across this case library — and in the real assessment.</p>
+      <div class="trap-grid">${caseTraps.map(([title, note, caseRef]) => `<article class="trap-card"><b>${title}</b><p>${note}</p><small>See: ${caseRef}</small></article>`).join("")}</div>
+    </section>
+  </section>`);
+  document.querySelector("#backToWelcome").onclick = welcome;
+}
+
 function welcome() {
   state.screen = "welcome";
   shell(`<section class="welcome">
@@ -580,6 +678,7 @@ function welcome() {
       <div class="setup-cards"><div><span>9</span><small>Rotating cases</small></div><div><span>8</span><small>Sequential questions</small></div><div><span>1 min</span><small>Video close</small></div></div>
       <div class="mode-picker"><button class="mode selected" data-mode="timed"><b>Timed simulation</b><small>30 minutes · feedback at the end</small></button><button class="mode" data-mode="practice"><b>Practice mode</b><small>No timer · answer feedback as you go</small></button></div>
       <button class="primary large" id="start">Begin timed simulation <span>→</span></button>
+      <button class="text-button" id="openReference">📚 Glossary &amp; formulas study guide →</button>
       <p class="fine">Calculator, paper, and pen are allowed. Answers lock when you continue. This is an independent educational simulator—not an official BCG or HireQuotient assessment.</p>
     </div>
     <aside class="case-card"><div class="case-icon">⌁</div><p class="eyebrow">ROTATING CASE LIBRARY</p><h2>Commercial + public-impact strategy</h2><p>Attempts rotate across acquisition, pricing diagnosis, market entry, competitive response, climate transition, health-care access, and circular-packaging decisions with real trade-offs.</p><div class="objective"><span>Objective</span><b>Make a recommendation that balances the true decision constraints—not just the financial answer.</b></div></aside>
@@ -590,6 +689,7 @@ function welcome() {
     document.querySelector("#start").innerHTML = `Begin ${state.mode === "practice" ? "practice mode" : "timed simulation"} <span>→</span>`;
   });
   document.querySelector("#start").onclick = () => onboarding(state.mode);
+  document.querySelector("#openReference").onclick = referenceView;
   document.querySelector("#randomCase").onclick = () => onboarding(state.mode);
   document.querySelectorAll(".choose-case").forEach(button => button.onclick = () => onboarding(state.mode, button.dataset.caseId));
   if (document.querySelector("#startDrill")) document.querySelector("#startDrill").onclick = event => drill(event.currentTarget.dataset.focus);

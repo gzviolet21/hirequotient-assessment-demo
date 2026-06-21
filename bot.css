@@ -148,3 +148,20 @@
 html[data-font-scale="1"] .case-context>p:not(.eyebrow),html[data-font-scale="1"] .instruction,html[data-font-scale="1"] .bot-note p,html[data-font-scale="1"] .bot-note small,html[data-font-scale="1"] .chat-intro,html[data-font-scale="1"] .chat-turn,html[data-font-scale="1"] .client-reply,html[data-font-scale="1"] .client-correction{font-size:14px}html[data-font-scale="1"] .choice,html[data-font-scale="1"] .number-field>span,html[data-font-scale="1"] .reasoning-field{font-size:15px}html[data-font-scale="1"] .exhibit table{font-size:14px}html[data-font-scale="1"] .exhibit th,html[data-font-scale="1"] .exhibit-head span,html[data-font-scale="1"] .exhibit-head small,html[data-font-scale="1"] .number-field em,html[data-font-scale="1"] .reasoning-field small{font-size:12px}html[data-font-scale="1"] .reasoning-field textarea{font-size:14px}html[data-font-scale="1"] .inline-table table{font-size:12px}
 html[data-font-scale="2"] .case-context>p:not(.eyebrow),html[data-font-scale="2"] .instruction,html[data-font-scale="2"] .bot-note p,html[data-font-scale="2"] .bot-note small,html[data-font-scale="2"] .chat-intro,html[data-font-scale="2"] .chat-turn,html[data-font-scale="2"] .client-reply,html[data-font-scale="2"] .client-correction{font-size:17px;line-height:1.55}html[data-font-scale="2"] .choice,html[data-font-scale="2"] .number-field>span,html[data-font-scale="2"] .reasoning-field{font-size:18px}html[data-font-scale="2"] .exhibit table{font-size:17px}html[data-font-scale="2"] .exhibit th,html[data-font-scale="2"] .exhibit-head span,html[data-font-scale="2"] .exhibit-head small,html[data-font-scale="2"] .number-field em,html[data-font-scale="2"] .reasoning-field small{font-size:14px}html[data-font-scale="2"] .reasoning-field textarea{font-size:17px}html[data-font-scale="2"] .inline-table table{font-size:14px}@media(max-width:600px){html[data-font-scale="2"] .choice{padding:15px 14px}html[data-font-scale="2"] .exhibit th,html[data-font-scale="2"] .exhibit td{padding:12px}}
 html[data-font-scale="1"] .short-answer-field{font-size:15px}html[data-font-scale="1"] .short-answer-field textarea{font-size:14px}html[data-font-scale="2"] .short-answer-field{font-size:18px}html[data-font-scale="2"] .short-answer-field textarea{font-size:17px}@media(max-width:560px){.short-answer-field{margin-left:0}.answer-detail .rubric-review,.answer-detail .model-answer{grid-template-columns:1fr;gap:4px}}
+
+.reference-page { max-width: 1064px; margin: 0 auto 40px; padding: 0 28px; }
+.reference-hero { max-width: 720px; margin: 36px 0 28px; }
+.reference-hero h1 { margin: 0 0 14px; color: var(--navy); font: 800 clamp(30px, 4vw, 44px)/1.1 Manrope; letter-spacing: -1.5px; }
+.reference-hero p:not(.eyebrow) { margin: 0 0 14px; color: #61708c; font-size: 14px; line-height: 1.6; }
+.reference-block { margin-bottom: 30px; }
+.reference-block h2 { margin: 0 0 12px; color: #263754; font: 700 19px Manrope; }
+.formula-grid, .glossary-grid, .trap-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.formula-card, .glossary-term, .trap-card { padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+.formula-card b, .glossary-term b, .trap-card b { display: block; margin-bottom: 7px; color: var(--navy); font: 700 13px 'DM Sans'; }
+.formula-card code { display: block; margin-bottom: 8px; padding: 7px 9px; border-radius: 6px; background: var(--soft); color: var(--blue-dark); font: 600 12px/1.45 monospace; white-space: pre-wrap; word-break: break-word; }
+.formula-card p, .glossary-term p, .trap-card p { margin: 0; color: #5d6d86; font-size: 12px; line-height: 1.5; }
+.traps-intro { margin: -6px 0 12px; color: var(--muted); font-size: 12px; }
+.trap-card { border-color: #f1d5a6; background: #fff8eb; }
+.trap-card small { display: block; margin-top: 9px; color: #9d6331; font-size: 10px; font-weight: 700; letter-spacing: .3px; }
+@media (max-width: 900px) { .formula-grid, .glossary-grid, .trap-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .reference-page { padding: 0 18px; } .formula-grid, .glossary-grid, .trap-grid { grid-template-columns: 1fr; } }
