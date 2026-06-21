@@ -370,8 +370,31 @@ const demoCandidates = [
   { id: "demo-james", name: "James Okafor", role: "Associate Consultant", title: "NusaSip × BrewPack", mode: "Timed", score: 84, skills: { "Problem structuring": 80, "Quantitative reasoning": 90, "Data interpretation": 83, "Business judgment": 79, "Synthesis": 84 }, mistakes: [{ category: "Business judgment" }], date: "Yesterday", status: "Complete", videoRecorded: true, integrity: "No review flags" },
 ];
 
+const skillCategories = ["Problem structuring", "Quantitative reasoning", "Data interpretation", "Business judgment", "Synthesis"];
+
 function loadHistory() {
   try { return JSON.parse(localStorage.getItem("casey-practice-history") || "[]"); } catch { return []; }
+}
+
+function skillAverages(history) {
+  return skillCategories.map(name => [name, Math.round(history.reduce((sum, item) => sum + item.skills[name], 0) / history.length)]).sort((a, b) => a[1] - b[1]);
+}
+
+function categoryPoints(caseItem) {
+  return caseItem.questions.reduce((points, question) => ({ ...points, [question.category]: (points[question.category] || 0) + question.points }), {});
+}
+
+function pickCase(availableCases) {
+  const history = loadHistory();
+  if (!history.length) return availableCases[Math.floor(Math.random() * availableCases.length)];
+  const [focus] = skillAverages(history)[0];
+  const weights = availableCases.map(caseItem => 1 + (categoryPoints(caseItem)[focus] || 0) / 10);
+  let roll = Math.random() * weights.reduce((sum, weight) => sum + weight, 0);
+  for (let index = 0; index < availableCases.length; index += 1) {
+    roll -= weights[index];
+    if (roll <= 0) return availableCases[index];
+  }
+  return availableCases[availableCases.length - 1];
 }
 
 function saveAttempt(attempt) {
@@ -427,8 +450,8 @@ function historyHtml() {
   const history = loadHistory();
   if (!history.length) return `<section class="history-card"><div><p class="eyebrow">ATTEMPT HISTORY</p><h2>Your trend will appear here.</h2><p>Complete a case to save the score and the capability to drill next.</p></div></section>`;
   const latest = history.slice(0, 4);
-  const averages = ["Problem structuring", "Quantitative reasoning", "Data interpretation", "Business judgment", "Synthesis"].map(name => [name, Math.round(history.reduce((sum, item) => sum + item.skills[name], 0) / history.length)]).sort((a, b) => a[1] - b[1]);
-  return `<section class="history-card"><div><p class="eyebrow">ATTEMPT HISTORY</p><h2>Keep drilling ${averages[0][0].toLowerCase()}.</h2><p>Your average is ${averages[0][1]}% in this capability across ${history.length} saved attempt${history.length === 1 ? "" : "s"}.</p></div><div class="history-list">${latest.map(item => `<div><span>${item.title}</span><small>${item.mode} · ${item.date}</small><b>${item.score}</b></div>`).join("")}</div></section>`;
+  const averages = skillAverages(history);
+  return `<section class="history-card"><div><p class="eyebrow">ATTEMPT HISTORY</p><h2>Keep drilling ${averages[0][0].toLowerCase()}.</h2><p>Your average is ${averages[0][1]}% in this capability across ${history.length} saved attempt${history.length === 1 ? "" : "s"}.</p><p class="rotation-note">Random case picks are now weighted toward ${averages[0][0].toLowerCase()} until this improves — heavier on that skill, not exclusive to it.</p></div><div class="history-list">${latest.map(item => `<div><span>${item.title}</span><small>${item.mode} · ${item.date}</small><b>${item.score}</b></div>`).join("")}</div></section>`;
 }
 
 function coachHtml() {
@@ -442,9 +465,8 @@ function coachHtml() {
 
 function serviceDashboardHtml() {
   const history = loadHistory();
-  const skills = ["Problem structuring", "Quantitative reasoning", "Data interpretation", "Business judgment", "Synthesis"];
   const readiness = history.length ? Math.round(history.reduce((sum, item) => sum + item.score, 0) / history.length) : 0;
-  const weakest = history.length ? skills.map(skill => [skill, Math.round(history.reduce((sum, item) => sum + item.skills[skill], 0) / history.length)]).sort((a, b) => a[1] - b[1])[0] : ["Quantitative reasoning", 0];
+  const weakest = history.length ? skillAverages(history)[0] : ["Quantitative reasoning", 0];
   return `<section class="member-dashboard"><div class="member-heading"><div><p class="eyebrow">YOUR PREP OS</p><h2>Practice with a plan, not just more cases.</h2><p>Build case fluency, measure your readiness, and close your specific gaps.</p></div><span class="member-plan">Starter</span></div><div class="member-grid"><article><small>READINESS</small><strong>${history.length ? `${readiness}/100` : "—"}</strong><p>${history.length ? "Based on your recent attempts" : "Complete a case to establish a baseline"}</p></article><article><small>NEXT FOCUS</small><strong>${history.length ? weakest[0] : "First case"}</strong><p>${history.length ? `${weakest[1]}% current capability score` : "Start with a timed baseline"}</p></article><article><small>THIS WEEK</small><strong>${history.length}/3</strong><p>Suggested full simulations</p></article><article class="pro-card"><small>PRO PRACTICE</small><strong>Structured prep path</strong><p>Unlock custom plans, deeper drills, and expanded case packs.</p><button id="proPreview">Preview Pro →</button></article></div></section>`;
 }
 
@@ -735,7 +757,7 @@ function start(mode, selectedCaseId = null) {
   state.screen = "intro";
   state.mode = mode;
   const availableCases = caseLibrary.filter(caseItem => caseItem.id !== state.lastCaseId);
-  activeCase = selectedCaseId ? caseLibrary.find(caseItem => caseItem.id === selectedCaseId) : availableCases[Math.floor(Math.random() * availableCases.length)];
+  activeCase = selectedCaseId ? caseLibrary.find(caseItem => caseItem.id === selectedCaseId) : pickCase(availableCases);
   state.lastCaseId = activeCase.id;
   state.seconds = CASE_MINUTES * 60;
   state.deadline = null;

@@ -165,3 +165,5 @@ html[data-font-scale="1"] .short-answer-field{font-size:15px}html[data-font-scal
 .trap-card small { display: block; margin-top: 9px; color: #9d6331; font-size: 10px; font-weight: 700; letter-spacing: .3px; }
 @media (max-width: 900px) { .formula-grid, .glossary-grid, .trap-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 560px) { .reference-page { padding: 0 18px; } .formula-grid, .glossary-grid, .trap-grid { grid-template-columns: 1fr; } }
+
+.rotation-note { margin-top: 8px !important; color: #8491a5; font-size: 11px; }
