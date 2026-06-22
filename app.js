@@ -550,8 +550,12 @@ function transcriptHtml() {
   return `<section class="chat-log" aria-live="polite">${state.transcript.map(turn => `<article class="chat-turn casey-turn"><span>c</span><div><b>Casey</b><p>${turn.prompt}</p>${turn.exhibit ? inlineExhibit(turn.exhibit) : ""}</div></article>${turn.answer === undefined ? "" : `<article class="chat-turn candidate-turn"><div><b>You</b><p>${formatTranscriptAnswer(turn.answer)}</p><small>Sent · locked</small></div></article>`}`).join("")}</section>`;
 }
 
+function exhibitCardsHtml(exhibit) {
+  return exhibit.rows.map(row => `<div class="exhibit-card"><b>${row[0]}</b>${row.slice(1).map((cell, i) => `<div><small>${exhibit.columns[i + 1]}</small><em>${cell}</em></div>`).join("")}</div>`).join("");
+}
+
 function inlineExhibit(exhibit) {
-  return `<details class="inline-exhibit"><summary>Attachment · ${exhibit.title} <span>View data</span></summary><div class="inline-table"><table><thead><tr>${exhibit.columns.map(column => `<th>${column}</th>`).join("")}</tr></thead><tbody>${exhibit.rows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join("")}</tr>`).join("")}</tbody></table></div></details>`;
+  return `<details class="inline-exhibit"><summary>Attachment · ${exhibit.title} <span>View data</span></summary><div class="inline-table"><table><thead><tr>${exhibit.columns.map(column => `<th>${column}</th>`).join("")}</tr></thead><tbody>${exhibit.rows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join("")}</tr>`).join("")}</tbody></table></div><div class="inline-cards">${exhibitCardsHtml(exhibit)}</div></details>`;
 }
 
 function startTimer() {
