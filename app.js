@@ -550,8 +550,12 @@ function transcriptHtml() {
   return `<section class="chat-log" aria-live="polite">${state.transcript.map(turn => `<article class="chat-turn casey-turn"><span>c</span><div><b>Casey</b><p>${turn.prompt}</p>${turn.exhibit ? inlineExhibit(turn.exhibit) : ""}</div></article>${turn.answer === undefined ? "" : `<article class="chat-turn candidate-turn"><div><b>You</b><p>${formatTranscriptAnswer(turn.answer)}</p><small>Sent · locked</small></div></article>`}`).join("")}</section>`;
 }
 
+function exhibitCardsHtml(exhibit) {
+  return exhibit.rows.map(row => `<div class="exhibit-card"><b>${row[0]}</b>${row.slice(1).map((cell, i) => `<div><small>${exhibit.columns[i + 1]}</small><em>${cell}</em></div>`).join("")}</div>`).join("");
+}
+
 function inlineExhibit(exhibit) {
-  return `<details class="inline-exhibit"><summary>Attachment · ${exhibit.title} <span>View data</span></summary><div class="inline-table"><table><thead><tr>${exhibit.columns.map(column => `<th>${column}</th>`).join("")}</tr></thead><tbody>${exhibit.rows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join("")}</tr>`).join("")}</tbody></table></div></details>`;
+  return `<details class="inline-exhibit"><summary>Attachment · ${exhibit.title} <span>View data</span></summary><div class="inline-table"><table><thead><tr>${exhibit.columns.map(column => `<th>${column}</th>`).join("")}</tr></thead><tbody>${exhibit.rows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join("")}</tr>`).join("")}</tbody></table></div><div class="inline-cards">${exhibitCardsHtml(exhibit)}</div></details>`;
 }
 
 function startTimer() {
@@ -806,7 +810,7 @@ function introExchange(caseItem, onComplete) {
 
 function exhibitHtml(exhibit, portfolioOptions = []) {
   if (!exhibit) return `<div class="exhibit empty-exhibit"><span>⌁</span><p>No additional exhibit is required for this question.</p><small>Use the client objective and your business judgment.</small></div>`;
-  return `<aside class="exhibit"><div class="exhibit-head"><div><span>${exhibit.title}</span><small>${exhibit.note}</small></div><button class="expand" title="Exhibit is already shown at full readable size">⤢</button></div><div class="table-wrap"><table><thead><tr>${exhibit.columns.map(c => `<th>${c}</th>`).join("")}</tr></thead><tbody>${exhibit.rows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join("")}</tr>`).join("")}</tbody></table></div></aside>`;
+  return `<aside class="exhibit"><div class="exhibit-head"><div><span>${exhibit.title}</span><small>${exhibit.note}</small></div><button class="expand" title="Exhibit is already shown at full readable size">⤢</button></div><div class="table-wrap"><table><thead><tr>${exhibit.columns.map(c => `<th>${c}</th>`).join("")}</tr></thead><tbody>${exhibit.rows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join("")}</tr>`).join("")}</tbody></table></div><div class="exhibit-cards">${exhibitCardsHtml(exhibit)}</div></aside>`;
 }
 
 function portfolioMenuHtml(portfolios) {
@@ -815,7 +819,7 @@ function portfolioMenuHtml(portfolios) {
 
 function openExhibitViewer(exhibit, portfolioOptions = []) {
   if (!exhibit) return;
-  const viewer = `<div class="exhibit-viewer" id="exhibitViewer" role="dialog" aria-modal="true" aria-label="Expanded exhibit"><section><header><div><span>${exhibit.title}</span><small>${exhibit.note}</small></div><button id="closeExhibitViewer" aria-label="Close exhibit">×</button></header><div class="exhibit-viewer-table"><table><thead><tr>${exhibit.columns.map(column => `<th>${column}</th>`).join("")}</tr></thead><tbody>${exhibit.rows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join("")}</tr>`).join("")}</tbody></table></div>${portfolioOptions.length ? portfolioMenuHtml(portfolioOptions) : ""}</section></div>`;
+  const viewer = `<div class="exhibit-viewer" id="exhibitViewer" role="dialog" aria-modal="true" aria-label="Expanded exhibit"><section><header><div><span>${exhibit.title}</span><small>${exhibit.note}</small></div><button id="closeExhibitViewer" aria-label="Close exhibit">×</button></header><div class="exhibit-viewer-table"><table><thead><tr>${exhibit.columns.map(column => `<th>${column}</th>`).join("")}</tr></thead><tbody>${exhibit.rows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join("")}</tr>`).join("")}</tbody></table></div><div class="exhibit-viewer-cards">${exhibitCardsHtml(exhibit)}</div>${portfolioOptions.length ? portfolioMenuHtml(portfolioOptions) : ""}</section></div>`;
   document.body.insertAdjacentHTML("beforeend", viewer);
   const close = () => document.querySelector("#exhibitViewer")?.remove();
   document.querySelector("#closeExhibitViewer").onclick = close;
