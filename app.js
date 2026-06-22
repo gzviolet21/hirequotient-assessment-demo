@@ -819,7 +819,7 @@ function portfolioMenuHtml(portfolios) {
 
 function openExhibitViewer(exhibit, portfolioOptions = []) {
   if (!exhibit) return;
-  const viewer = `<div class="exhibit-viewer" id="exhibitViewer" role="dialog" aria-modal="true" aria-label="Expanded exhibit"><section><header><div><span>${exhibit.title}</span><small>${exhibit.note}</small></div><button id="closeExhibitViewer" aria-label="Close exhibit">×</button></header><div class="exhibit-viewer-table"><table><thead><tr>${exhibit.columns.map(column => `<th>${column}</th>`).join("")}</tr></thead><tbody>${exhibit.rows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join("")}</tr>`).join("")}</tbody></table></div>${portfolioOptions.length ? portfolioMenuHtml(portfolioOptions) : ""}</section></div>`;
+  const viewer = `<div class="exhibit-viewer" id="exhibitViewer" role="dialog" aria-modal="true" aria-label="Expanded exhibit"><section><header><div><span>${exhibit.title}</span><small>${exhibit.note}</small></div><button id="closeExhibitViewer" aria-label="Close exhibit">×</button></header><div class="exhibit-viewer-table"><table><thead><tr>${exhibit.columns.map(column => `<th>${column}</th>`).join("")}</tr></thead><tbody>${exhibit.rows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join("")}</tr>`).join("")}</tbody></table></div><div class="exhibit-viewer-cards">${exhibitCardsHtml(exhibit)}</div>${portfolioOptions.length ? portfolioMenuHtml(portfolioOptions) : ""}</section></div>`;
   document.body.insertAdjacentHTML("beforeend", viewer);
   const close = () => document.querySelector("#exhibitViewer")?.remove();
   document.querySelector("#closeExhibitViewer").onclick = close;
