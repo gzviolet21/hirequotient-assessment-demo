@@ -114,6 +114,8 @@
 .chat-pane .choice.selected { background: #dfe8ff; }
 .response-ready { max-width: 260px; margin: 19px 0 0 auto; padding: 10px 13px; border-radius: 12px 12px 3px 12px; background: #dfe8ff; color: #2e4eab; font-size: 11px; }
 .response-ready span { display: block; margin-top: 3px; color: #6075b6; font-size: 10px; }
+.select-counter { display: inline-block; margin: 0 0 9px 38px; padding: 5px 10px; border-radius: 12px; background: #dfe8ff; color: #2e4eab; font: 700 11px 'DM Sans'; }
+.select-counter.complete { background: #e7f7ee; color: #1da879; }
 
 @media (max-width: 720px) { .library { margin: 0 20px 20px; }.case-grid { grid-template-columns: 1fr; }.library-head { align-items: start; gap: 12px; flex-direction: column; }.chat-pane .question-head,.chat-pane .instruction,.chat-pane .choices,.chat-pane .number-field,.reasoning-field,.short-answer-field { margin-left: 0; } }
 
