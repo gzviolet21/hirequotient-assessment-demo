@@ -359,15 +359,23 @@ const shortResponseOverrides = {
 caseLibrary.forEach(caseItem => Object.entries(shortResponseOverrides[caseItem.id]).forEach(([id, override]) => Object.assign(caseItem.questions.find(question => question.id === id), override)));
 
 let activeCase = caseLibrary[0];
-const state = { screen: "welcome", mode: "timed", lastCaseId: null, index: 0, answers: {}, reasoning: {}, evaluations: {}, transcript: [], optionSeed: 1, seconds: CASE_MINUTES * 60, deadline: null, timer: null, videoTimer: null, prepSeconds: 60, recordingSeconds: 60, stream: null, recorder: null, recorded: false, onboardingStep: 0, lastAttemptId: null };
+const state = { screen: "welcome", mode: "timed", lastCaseId: null, index: 0, answers: {}, reasoning: {}, evaluations: {}, transcript: [], optionSeed: 1, seconds: CASE_MINUTES * 60, deadline: null, timer: null, videoTimer: null, prepSeconds: 60, recordingSeconds: 60, stream: null, recorder: null, recorded: false, onboardingStep: 0, lastAttemptId: null, integrityEvents: [] };
 const app = document.querySelector("#app");
 const letters = ["A", "B", "C", "D", "E", "F", "G", "H"];
 
+function trackIntegrityEvent(type) {
+  if (state.mode !== "timed" || state.screen !== "case") return;
+  state.integrityEvents.push({ type, questionIndex: state.index, at: Date.now() });
+  persistCurrentAttempt();
+}
+document.addEventListener("visibilitychange", () => { if (document.hidden) trackIntegrityEvent("focus-change"); });
+document.addEventListener("paste", () => trackIntegrityEvent("paste"));
+
 const demoCandidates = [
-  { id: "demo-aisha", name: "Aisha Rahman", role: "Strategy Analyst", title: "SuryaGrid 2030 Transition", mode: "Timed", score: 91, skills: { "Problem structuring": 92, "Quantitative reasoning": 88, "Data interpretation": 94, "Business judgment": 91, "Synthesis": 89 }, mistakes: [{ category: "Quantitative reasoning" }], date: "Today", status: "Recommended", videoRecorded: true, integrity: "No review flags" },
-  { id: "demo-lucas", name: "Lucas Martin", role: "Business Analyst", title: "PacificPack Circularity", mode: "Timed", score: 86, skills: { "Problem structuring": 88, "Quantitative reasoning": 84, "Data interpretation": 90, "Business judgment": 82, "Synthesis": 85 }, mistakes: [{ category: "Business judgment" }], date: "Today", status: "Complete", videoRecorded: true, integrity: "No review flags" },
-  { id: "demo-priya", name: "Priya Nair", role: "Graduate Consultant", title: "ArchipelagoCare Access", mode: "Timed", score: 78, skills: { "Problem structuring": 82, "Quantitative reasoning": 73, "Data interpretation": 81, "Business judgment": 76, "Synthesis": 75 }, mistakes: [{ category: "Quantitative reasoning" }, { category: "Synthesis" }], date: "Today", status: "Needs review", videoRecorded: false, integrity: "2 focus-change events — context required" },
-  { id: "demo-james", name: "James Okafor", role: "Associate Consultant", title: "NusaSip × BrewPack", mode: "Timed", score: 84, skills: { "Problem structuring": 80, "Quantitative reasoning": 90, "Data interpretation": 83, "Business judgment": 79, "Synthesis": 84 }, mistakes: [{ category: "Business judgment" }], date: "Yesterday", status: "Complete", videoRecorded: true, integrity: "No review flags" },
+  { id: "demo-aisha", name: "Aisha Rahman", role: "Strategy Analyst", title: "SuryaGrid 2030 Transition", mode: "Timed", score: 91, skills: { "Problem structuring": 92, "Quantitative reasoning": 88, "Data interpretation": 94, "Business judgment": 91, "Synthesis": 89 }, mistakes: [{ category: "Quantitative reasoning" }], date: "Today", status: "Recommended", videoRecorded: true, integrityEvents: [] },
+  { id: "demo-lucas", name: "Lucas Martin", role: "Business Analyst", title: "PacificPack Circularity", mode: "Timed", score: 86, skills: { "Problem structuring": 88, "Quantitative reasoning": 84, "Data interpretation": 90, "Business judgment": 82, "Synthesis": 85 }, mistakes: [{ category: "Business judgment" }], date: "Today", status: "Complete", videoRecorded: true, integrityEvents: [] },
+  { id: "demo-priya", name: "Priya Nair", role: "Graduate Consultant", title: "ArchipelagoCare Access", mode: "Timed", score: 78, skills: { "Problem structuring": 82, "Quantitative reasoning": 73, "Data interpretation": 81, "Business judgment": 76, "Synthesis": 75 }, mistakes: [{ category: "Quantitative reasoning" }, { category: "Synthesis" }], date: "Today", status: "Needs review", videoRecorded: false, integrityEvents: [{ type: "focus-change", questionIndex: 2, at: Date.now() }, { type: "focus-change", questionIndex: 5, at: Date.now() }] },
+  { id: "demo-james", name: "James Okafor", role: "Associate Consultant", title: "NusaSip × BrewPack", mode: "Timed", score: 84, skills: { "Problem structuring": 80, "Quantitative reasoning": 90, "Data interpretation": 83, "Business judgment": 79, "Synthesis": 84 }, mistakes: [{ category: "Business judgment" }], date: "Yesterday", status: "Complete", videoRecorded: true, integrityEvents: [] },
 ];
 
 const skillCategories = ["Problem structuring", "Quantitative reasoning", "Data interpretation", "Business judgment", "Synthesis"];
@@ -420,9 +428,13 @@ function recruiterCandidates() {
     name: "You (local attempt)",
     role: "Candidate practice record",
     status: "Complete",
-    integrity: "No monitoring data collected",
+    integrityEvents: item.integrityEvents || [],
   }));
   return [...local, ...demoCandidates].map(candidate => ({ ...candidate, status: statuses[candidate.id] || candidate.status }));
+}
+
+function integrityFlags(candidate) {
+  return candidate.mode === "Timed" ? (candidate.integrityEvents || []) : [];
 }
 
 function recruiterView(selectedId = null, filter = "all") {
@@ -430,7 +442,7 @@ function recruiterView(selectedId = null, filter = "all") {
   const candidates = all.filter(candidate => filter === "all" || candidate.status.toLowerCase().replace(" ", "-") === filter);
   const selected = all.find(candidate => candidate.id === selectedId) || candidates[0] || all[0];
   const average = Math.round(all.reduce((sum, candidate) => sum + candidate.score, 0) / Math.max(1, all.length));
-  shell(`<section class="recruiter-shell"><header class="recruiter-hero"><div><p class="eyebrow">RECRUITER REVIEW · LOCAL DEMO</p><h1>Assessment review queue</h1><p>Use results as structured evidence for a human conversation—not an automatic hiring decision.</p></div><button class="back-candidate" id="backCandidate">← Back to candidate practice</button></header><section class="recruiter-metrics"><article><small>CANDIDATES</small><b>${all.length}</b><span>Local + synthetic demo cohort</span></article><article><small>AVERAGE SCORE</small><b>${average}</b><span>Across completed assessments</span></article><article><small>RECOMMENDED</small><b>${all.filter(c => c.status === "Recommended").length}</b><span>Requires recruiter confirmation</span></article><article><small>REVIEW FLAGS</small><b>${all.filter(c => c.integrity !== "No review flags" && c.integrity !== "No monitoring data collected").length}</b><span>Signals, not verdicts</span></article></section><section class="review-controls"><div class="review-tabs">${[["all", "All candidates"], ["recommended", "Recommended"], ["complete", "Complete"], ["needs-review", "Needs review"]].map(([key, label]) => `<button class="review-filter ${filter === key ? "active" : ""}" data-filter="${key}">${label}</button>`).join("")}</div><p>Scores combine case evidence and capability results; video delivery remains human-reviewed.</p></section><section class="review-layout"><div class="review-list"><div class="review-list-head"><b>Candidate</b><b>Status</b><b>Score</b><b>Evidence</b></div>${candidates.sort((a,b) => b.score - a.score).map(candidate => `<button class="candidate-row ${selected?.id === candidate.id ? "selected" : ""}" data-candidate-id="${candidate.id}"><span><strong>${candidate.name}</strong><small>${candidate.role} · ${candidate.title}</small></span><em class="status ${candidate.status.toLowerCase().replace(" ", "-")}">${candidate.status}</em><b>${candidate.score}</b><i>${candidate.integrity === "No review flags" || candidate.integrity === "No monitoring data collected" ? "Evidence ready" : "Review signal"}</i></button>`).join("")}</div>${selected ? recruiterDetail(selected) : ""}</section></section>`);
+  shell(`<section class="recruiter-shell"><header class="recruiter-hero"><div><p class="eyebrow">RECRUITER REVIEW · LOCAL DEMO</p><h1>Assessment review queue</h1><p>Use results as structured evidence for a human conversation—not an automatic hiring decision.</p></div><button class="back-candidate" id="backCandidate">← Back to candidate practice</button></header><section class="recruiter-metrics"><article><small>CANDIDATES</small><b>${all.length}</b><span>Local + synthetic demo cohort</span></article><article><small>AVERAGE SCORE</small><b>${average}</b><span>Across completed assessments</span></article><article><small>RECOMMENDED</small><b>${all.filter(c => c.status === "Recommended").length}</b><span>Requires recruiter confirmation</span></article><article><small>REVIEW FLAGS</small><b>${all.filter(c => integrityFlags(c).length).length}</b><span>Signals, not verdicts</span></article></section><section class="review-controls"><div class="review-tabs">${[["all", "All candidates"], ["recommended", "Recommended"], ["complete", "Complete"], ["needs-review", "Needs review"]].map(([key, label]) => `<button class="review-filter ${filter === key ? "active" : ""}" data-filter="${key}">${label}</button>`).join("")}</div><p>Scores combine case evidence and capability results; video delivery remains human-reviewed.</p></section><section class="review-layout"><div class="review-list"><div class="review-list-head"><b>Candidate</b><b>Status</b><b>Score</b><b>Evidence</b></div>${candidates.sort((a,b) => b.score - a.score).map(candidate => `<button class="candidate-row ${selected?.id === candidate.id ? "selected" : ""}" data-candidate-id="${candidate.id}"><span><strong>${candidate.name}</strong><small>${candidate.role} · ${candidate.title}</small></span><em class="status ${candidate.status.toLowerCase().replace(" ", "-")}">${candidate.status}</em><b>${candidate.score}</b><i>${integrityFlags(candidate).length ? "Review signal" : "Evidence ready"}</i></button>`).join("")}</div>${selected ? recruiterDetail(selected) : ""}</section></section>`);
   document.querySelector("#backCandidate").onclick = welcome;
   document.querySelectorAll(".review-filter").forEach(button => button.onclick = () => recruiterView(null, button.dataset.filter));
   document.querySelectorAll(".candidate-row").forEach(button => button.onclick = () => recruiterView(button.dataset.candidateId, filter));
@@ -440,10 +452,19 @@ function recruiterView(selectedId = null, filter = "all") {
   if (note) note.onclick = () => { note.textContent = "Reviewer note recorded"; note.disabled = true; };
 }
 
+function integrityHtml(candidate) {
+  const events = integrityFlags(candidate);
+  if (candidate.mode !== "Timed") return `<p class="integrity-empty">No monitoring data collected — practice mode is not proctored.</p>`;
+  if (!events.length) return `<p class="integrity-empty">No review flags. No focus changes or pasted text were detected during the timed run.</p>`;
+  const labels = { "focus-change": "Left the assessment tab/window", paste: "Pasted text into a response" };
+  const byType = events.reduce((all, event) => ({ ...all, [event.type]: [...(all[event.type] || []), event] }), {});
+  return `<div class="integrity-flags">${Object.entries(byType).map(([type, list]) => `<div class="integrity-flag"><b>${list.length}× ${labels[type] || type}</b><span>Question ${[...new Set(list.map(event => event.questionIndex + 1))].join(", ")}</span></div>`).join("")}</div>`;
+}
+
 function recruiterDetail(candidate) {
   const skills = Object.entries(candidate.skills || {});
   const missed = [...new Set((candidate.mistakes || []).map(item => item.category))];
-  return `<aside class="candidate-report"><div class="report-head"><div class="report-avatar">${candidate.name.split(" ").map(word => word[0]).join("").slice(0,2)}</div><div><h2>${candidate.name}</h2><p>${candidate.role}</p></div><span class="status ${candidate.status.toLowerCase().replace(" ", "-")}">${candidate.status}</span></div><section><h3>Assessment evidence</h3><p><b>${candidate.title}</b> · ${candidate.mode} · ${candidate.date}</p><div class="report-score"><b>${candidate.score}</b><span>/ 100 overall score</span></div></section><section><h3>Capability profile</h3>${skills.map(([name, score]) => `<div class="report-skill"><span>${name}</span><b>${score}</b><i><em style="width:${score}%"></em></i></div>`).join("")}</section><section><h3>Review notes</h3><p><b>Likely drill areas:</b> ${missed.length ? missed.join(", ") : "No material weak area identified"}</p><p><b>Video:</b> ${candidate.videoRecorded ? "Recorded; review answer-first structure and delivery." : "No recording available in this demo."}</p><p><b>Integrity context:</b> ${candidate.integrity}</p></section><div class="report-actions"><button class="primary" id="progressCandidate">Move to interview</button><button class="review-note">Add reviewer note</button></div><small class="human-note">Human review required: scores and interaction signals are decision support, not an automated hiring outcome.</small></aside>`;
+  return `<aside class="candidate-report"><div class="report-head"><div class="report-avatar">${candidate.name.split(" ").map(word => word[0]).join("").slice(0,2)}</div><div><h2>${candidate.name}</h2><p>${candidate.role}</p></div><span class="status ${candidate.status.toLowerCase().replace(" ", "-")}">${candidate.status}</span></div><section><h3>Assessment evidence</h3><p><b>${candidate.title}</b> · ${candidate.mode} · ${candidate.date}</p><div class="report-score"><b>${candidate.score}</b><span>/ 100 overall score</span></div></section><section><h3>Capability profile</h3>${skills.map(([name, score]) => `<div class="report-skill"><span>${name}</span><b>${score}</b><i><em style="width:${score}%"></em></i></div>`).join("")}</section><section><h3>Review notes</h3><p><b>Likely drill areas:</b> ${missed.length ? missed.join(", ") : "No material weak area identified"}</p><p><b>Video:</b> ${candidate.videoRecorded ? "Recorded; review answer-first structure and delivery." : "No recording available in this demo."}</p></section><div class="integrity-section"><b>Integrity context</b>${integrityHtml(candidate)}</div><div class="report-actions"><button class="primary" id="progressCandidate">Move to interview</button><button class="review-note">Add reviewer note</button></div><small class="human-note">Human review required: scores and interaction signals are decision support, not an automated hiring outcome.</small></aside>`;
 }
 
 function historyHtml() {
@@ -507,7 +528,7 @@ function validateCaseLibrary() {
 
 function persistCurrentAttempt() {
   if (!activeCase || state.screen !== "case") return;
-  writeActiveAttempt({ version: 4, caseId: activeCase.id, mode: state.mode, index: state.index, answers: state.answers, reasoning: state.reasoning, evaluations: state.evaluations, transcript: state.transcript, optionSeed: state.optionSeed, deadline: state.deadline, lastCaseId: state.lastCaseId, savedAt: Date.now() });
+  writeActiveAttempt({ version: 4, caseId: activeCase.id, mode: state.mode, index: state.index, answers: state.answers, reasoning: state.reasoning, evaluations: state.evaluations, transcript: state.transcript, optionSeed: state.optionSeed, deadline: state.deadline, lastCaseId: state.lastCaseId, integrityEvents: state.integrityEvents, savedAt: Date.now() });
 }
 
 function restoreAttempt(attempt) {
@@ -521,6 +542,7 @@ function restoreAttempt(attempt) {
   state.optionSeed = attempt.optionSeed || 1;
   state.deadline = attempt.deadline || null;
   state.lastCaseId = attempt.lastCaseId || activeCase.id;
+  state.integrityEvents = attempt.integrityEvents || [];
   state.screen = "case";
   if (state.mode === "timed" && state.deadline && state.deadline <= Date.now()) { clearActiveAttempt(); videoRoom(); return; }
   renderQuestion();
@@ -705,6 +727,7 @@ function welcome() {
       <div class="mode-picker"><button class="mode selected" data-mode="timed"><b>Timed simulation</b><small>30 minutes · feedback at the end</small></button><button class="mode" data-mode="practice"><b>Practice mode</b><small>No timer · answer feedback as you go</small></button></div>
       <button class="primary large" id="start">Begin timed simulation <span>→</span></button>
       <button class="text-button" id="openReference">📚 Glossary &amp; formulas study guide →</button>
+      <button class="text-button" id="openRecruiterView">🗂 Recruiter review demo →</button>
       <p class="fine">Calculator, paper, and pen are allowed. Answers lock when you continue. This is an independent educational simulator—not an official BCG or HireQuotient assessment.</p>
     </div>
     <aside class="case-card"><div class="case-icon">⌁</div><p class="eyebrow">ROTATING CASE LIBRARY</p><h2>Commercial + public-impact strategy</h2><p>Attempts rotate across acquisition, pricing diagnosis, market entry, competitive response, climate transition, health-care access, and circular-packaging decisions with real trade-offs.</p><div class="objective"><span>Objective</span><b>Make a recommendation that balances the true decision constraints—not just the financial answer.</b></div></aside>
@@ -716,6 +739,7 @@ function welcome() {
   });
   document.querySelector("#start").onclick = () => onboarding(state.mode);
   document.querySelector("#openReference").onclick = referenceView;
+  document.querySelector("#openRecruiterView").onclick = () => recruiterView();
   document.querySelector("#randomCase").onclick = () => onboarding(state.mode);
   document.querySelectorAll(".choose-case").forEach(button => button.onclick = () => onboarding(state.mode, button.dataset.caseId));
   if (document.querySelector("#startDrill")) document.querySelector("#startDrill").onclick = event => drill(event.currentTarget.dataset.focus);
@@ -771,6 +795,7 @@ function start(mode, selectedCaseId = null) {
   state.evaluations = {};
   state.transcript = [];
   state.optionSeed = Math.floor(Math.random() * 2147483647) || 1;
+  state.integrityEvents = [];
   introExchange(activeCase, () => {
     state.screen = "case";
     renderQuestion();
@@ -1091,7 +1116,7 @@ function feedback() {
   const score = Math.round(total / 90 * 100);
   const skills = Object.fromEntries(["Problem structuring", "Quantitative reasoning", "Data interpretation", "Business judgment", "Synthesis"].map(name => [name, categoryScore(name)]));
   state.lastAttemptId = `attempt-${Date.now()}`;
-  saveAttempt({ id: state.lastAttemptId, title: activeCase.title, mode: state.mode === "practice" ? "Practice" : "Timed", score, skills, mistakes: results.filter(result => !result.correct).map(result => ({ category: result.q.category, question: result.q.prompt })), videoRecorded: state.recorded, date: new Date().toLocaleDateString() });
+  saveAttempt({ id: state.lastAttemptId, title: activeCase.title, mode: state.mode === "practice" ? "Practice" : "Timed", score, skills, mistakes: results.filter(result => !result.correct).map(result => ({ category: result.q.category, question: result.q.prompt })), videoRecorded: state.recorded, integrityEvents: state.integrityEvents, date: new Date().toLocaleDateString() });
   const verdict = score >= 80 ? ["Strong practice performance", "Your approach is suitably structured and numerically reliable. Tighten the final verbal recommendation with a crisp caveat."] : score >= 60 ? ["Promising, with a clear next focus", "You have the backbone of a solid case approach. Accuracy and evidence selection are the fastest gains before test day."] : ["Build the mechanics before the next full run", "The case is doing its useful job: showing exactly where to drill. Focus first on setup before speed."];
   shell(`<section class="results"><div class="result-hero"><div><p class="eyebrow">PRACTICE FEEDBACK</p><h1>${verdict[0]}</h1><p>${verdict[1]}</p><button class="primary" id="restart">Try again <span>↻</span></button></div><div class="score-ring" style="--score:${score}"><div><b>${score}</b><small>/ 100</small></div></div></div><section class="feedback-grid"><article class="feedback-card performance"><h2>Performance by capability</h2>${[["Problem structuring", categoryScore("Problem structuring")], ["Quantitative reasoning", categoryScore("Quantitative reasoning")], ["Data interpretation", categoryScore("Data interpretation")], ["Business judgment", categoryScore("Business judgment")], ["Synthesis", categoryScore("Synthesis")]].map(([name, value]) => `<div class="capability"><div><span>${name}</span><b>${value}%</b></div><i><em style="width:${value}%"></em></i></div>`).join("")}<div class="video-score"><span>${state.recorded ? "✓ Video recommendation recorded" : "○ Video recommendation skipped"}</span><small>${state.recorded ? "Review your delivery for structure, pace, and eye contact." : "For maximum realism, record the close on your next attempt."}</small></div></article><article class="feedback-card coach"><p class="eyebrow">COACH'S TAKE</p><h2>${score >= 80 ? "You made the right call: test before buying." : "Make the logic visible, not just the arithmetic."}</h2><p>The best supported recommendation is to avoid an immediate acquisition: the IDR 120.8bn value is a ceiling, not a reason to pay it, and the national campaign has a <b>–IDR 0.4bn</b> risk-adjusted value. Pilot demand, close the 5m-bottle capacity gap, then revisit a negotiated bid.</p><div><b>Strong one-minute close:</b><span>“I recommend a pilot rather than acquiring BrewPack now. The deal has a financial ceiling of IDR 120.8bn, but BrewPack cannot fulfill 5m bottles in Year 1 and a national launch is slightly value-negative after marketing spend. Pilot in priority cities, validate demand and cannibalization, and negotiate only once capacity and economics are proven.”</span></div></article></section><section class="feedback-card answer-review"><div><h2>Question-by-question review</h2><p>Use this as your drill list—focus on the underlying setup, not only the final number.</p></div>${results.map((r, i) => `<details ${!r.correct ? "open" : ""}><summary><span class="result-icon ${r.correct ? "right" : "wrong"}">${r.correct ? "✓" : "!"}</span><b>${i + 1}. ${r.q.category}</b><em>${r.correct ? "Correct" : "Review"}</em><i>⌄</i></summary><div class="answer-detail"><p>${r.q.prompt}</p><div><span>Your answer</span><b>${formatAnswer(state.answers[r.q.id])}</b></div><div><span>Expected answer</span><b>${formatAnswer(r.q.answer)}</b></div>${r.correct ? "<small>Good. Carry this same explicit setup into the next question.</small>" : `<small>${explain(r.q.id)}</small>`}</div></details>`).join("")}</section></section>`);
   document.querySelector(".result-hero .eyebrow").textContent = `PRACTICE FEEDBACK · ${activeCase.title.toUpperCase()}`;
