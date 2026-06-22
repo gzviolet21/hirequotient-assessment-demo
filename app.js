@@ -810,7 +810,7 @@ function introExchange(caseItem, onComplete) {
 
 function exhibitHtml(exhibit, portfolioOptions = []) {
   if (!exhibit) return `<div class="exhibit empty-exhibit"><span>⌁</span><p>No additional exhibit is required for this question.</p><small>Use the client objective and your business judgment.</small></div>`;
-  return `<aside class="exhibit"><div class="exhibit-head"><div><span>${exhibit.title}</span><small>${exhibit.note}</small></div><button class="expand" title="Exhibit is already shown at full readable size">⤢</button></div><div class="table-wrap"><table><thead><tr>${exhibit.columns.map(c => `<th>${c}</th>`).join("")}</tr></thead><tbody>${exhibit.rows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join("")}</tr>`).join("")}</tbody></table></div></aside>`;
+  return `<aside class="exhibit"><div class="exhibit-head"><div><span>${exhibit.title}</span><small>${exhibit.note}</small></div><button class="expand" title="Exhibit is already shown at full readable size">⤢</button></div><div class="table-wrap"><table><thead><tr>${exhibit.columns.map(c => `<th>${c}</th>`).join("")}</tr></thead><tbody>${exhibit.rows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join("")}</tr>`).join("")}</tbody></table></div><div class="exhibit-cards">${exhibitCardsHtml(exhibit)}</div></aside>`;
 }
 
 function portfolioMenuHtml(portfolios) {
